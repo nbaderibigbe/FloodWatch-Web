@@ -5,12 +5,12 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvH88HT0pC69iC
 const LOCATION = { lat: 6.5244, lng: 3.3792 }; // Lagos
 
 // UPDATE: Container is 100cm tall
-const CONTAINER_HEIGHT = 100; 
+const CONTAINER_HEIGHT = 16; 
 
 // UPDATE: Triggers based on DEPTH (Bottom up)
-// Since max is 100cm:
-let warningLevel = 70; // Yellow alert if water passes 70cm
-let floodLevel = 90;   // Red alert if water passes 90cm
+// Since max is 16cm:
+let warningLevel = 6; // Yellow alert if water passes 8cm
+let floodLevel = 10;   // Red alert if water passes 12cm
 
 // State
 let sensorData = { depth: 0, timestamp: new Date() }; // Changed 'distance' to 'depth'
