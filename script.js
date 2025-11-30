@@ -1,19 +1,15 @@
 // --- CONFIGURATION ---
-// Ensure this is your deployed Web App URL (Permissions: "Anyone")
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvH88HT0pC69iCIdgFzxFotDcfSUEcDMEm5i2FCe6UhRKxiiMWYdZ84_WIW_sH38M/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8mSqg0i97e7rvVo2LZXZrLwdrX0UN28q3ayyo0-ra0r8CDV0mudkqydWLJHJmP1igrw/exec";
 
-const LOCATION = { lat: 6.5244, lng: 3.3792 }; // Lagos
+// Coordinates for Ibadan
+const LOCATION = { lat: 7.3775, lng: 3.9470 }; 
 
-// UPDATE: Container is 100cm tall
 const CONTAINER_HEIGHT = 16;
-
-// UPDATE: Triggers based on DEPTH (Bottom up)
-// Since max is 16cm:
-let warningLevel = 6; // Yellow alert if water passes 8cm
-let floodLevel = 10;   // Red alert if water passes 12cm
+let warningLevel = 6; 
+let floodLevel = 10;   
 
 // State
-let sensorData = { depth: 0, timestamp: new Date() }; // Changed 'distance' to 'depth'
+let sensorData = { depth: 0, rate: 0, timestamp: new Date() }; // Added rate
 let isOnline = true;
 let isDarkMode = false;
 let historyData = [];
@@ -22,17 +18,16 @@ let historyData = [];
 document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
     initChart();
-    fetchWeather();
+    initWeather(); // Changed name to match function below
 
-    // Start Data Loop (Fetch every 3 seconds)
+    // Start Data Loop
     setInterval(fetchSensorData, 3000);
 
-    // Initialize Ruler Marks (Visual Guide 100cm down to 0)
+    // Initialize Ruler Marks
     const rulerContainer = document.getElementById('ruler-marks');
     for (let i = 0; i < 10; i++) {
         const mark = document.createElement('div');
         mark.className = "w-full border-b border-slate-400/50 h-[10%] flex items-end justify-end pr-1 text-[8px] text-slate-500 font-mono opacity-50";
-        // Labels: 100, 90, 80...
         mark.innerText = (CONTAINER_HEIGHT - (i * (CONTAINER_HEIGHT / 10))).toFixed(0);
         rulerContainer.appendChild(mark);
     }
@@ -41,12 +36,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const alertButton = document.getElementById("alertbtn");
     if (alertButton) alertButton.addEventListener("click", sendAlert);
 
-    // Simulator Logic (Testing UI manually)
+    // Simulator Logic
     document.getElementById('sim-slider').addEventListener('input', (e) => {
         const val = parseInt(e.target.value);
-        console.log("Simulating Water Depth:", val);
-        // Make sure the slider matches 0-100 scale in HTML or just interpret it here
-        updateDashboard({ depth: val, timestamp: new Date() });
+        // Simulate a fake rate for testing
+        updateDashboard({ depth: val, rate: 1.5, timestamp: new Date() });
     });
 
     // Dark Mode Toggle
@@ -63,8 +57,7 @@ function fetchSensorData() {
     fetch(APPS_SCRIPT_URL)
         .then(response => response.json())
         .then(data => {
-            // --- CONSOLE LOGGING (UPDATED FOR DIRECT VALUE) ---
-            console.group("🌊 Data Received (Pre-Calculated)");
+            console.group("🌊 Data Received");
             console.log("Raw JSON:", data);
 
             if (!data || data.WaterLevel === undefined) {
@@ -73,15 +66,10 @@ function fetchSensorData() {
                 return;
             }
 
-            // UPDATE: Direct assignment. No subtraction.
             const fetchedDepth = parseInt(data.WaterLevel);
+            // Get the Rate of Rise (default to 0 if missing)
+            const fetchedRate = parseFloat(data.Rate || 0);
             const fetchedTime = new Date(data.Timestamp);
-
-            console.log(`✅ Water Depth (from Arduino): ${fetchedDepth} cm`);
-            console.log(`📏 Container Max Height: ${CONTAINER_HEIGHT} cm`);
-            console.log(`🕒 Timestamp: ${fetchedTime.toLocaleTimeString()}`);
-            console.groupEnd();
-            // ----------------------------------------------
 
             // Offline Check logic (Older than 5 mins = offline)
             const now = new Date();
@@ -89,7 +77,6 @@ function fetchSensorData() {
 
             if (timeDiff > 5 * 60 * 1000) {
                 isOnline = false;
-                console.log("⚠ Device Status: OFFLINE (Data is old)");
             } else {
                 isOnline = true;
             }
@@ -98,8 +85,10 @@ function fetchSensorData() {
             // Update Dashboard
             updateDashboard({
                 depth: fetchedDepth,
+                rate: fetchedRate,
                 timestamp: fetchedTime
             });
+            console.groupEnd();
         })
         .catch(error => {
             console.error("❌ Error fetching sheet data:", error);
@@ -112,23 +101,27 @@ function updateDashboard(newData) {
     sensorData = newData;
 
     // 1. Get Values
-    // UPDATE: We use the depth directly. Clamp it between 0 and 100 just for safe UI.
     let currentDepth = Math.max(0, sensorData.depth);
+    let currentRate = sensorData.rate;
 
-    // Calculate percentage based on 100cm container
+    // Calculate percentage
     const percentage = Math.min(100, (currentDepth / CONTAINER_HEIGHT) * 100);
 
-    // 2. Determine State (Direct comparison)
-    const isFlood = currentDepth >= floodLevel;      // e.g. >= 90cm
-    const isWarning = currentDepth >= warningLevel;  // e.g. >= 70cm
+    // 2. Determine State
+    const isFlood = currentDepth >= floodLevel;      
+    const isWarning = currentDepth >= warningLevel;  
 
     // 3. Update Visualizer UI
     const waterEl = document.getElementById('water-level');
     const badgeEl = document.getElementById('status-badge');
     const ledEl = document.getElementById('sensor-led');
+    const rorEl = document.getElementById('ror-val');
 
     waterEl.style.height = `${percentage}%`;
     document.getElementById('live-depth').innerText = currentDepth.toFixed(1);
+    
+    // Update Rate of Rise Text
+    rorEl.innerText = currentRate.toFixed(2);
 
     // Dynamic Colors
     waterEl.className = `absolute bottom-0 w-full transition-all duration-1000 ease-in-out z-10 bg-gradient-to-t opacity-90 ${isFlood ? 'from-red-600 to-red-800' :
@@ -137,7 +130,7 @@ function updateDashboard(newData) {
         }`;
 
     badgeEl.innerText = isFlood ? "CRITICAL FLOOD RISK" : isWarning ? "WARNING: HIGH LEVEL" : "NORMAL FLOW";
-    badgeEl.className = `text-xs font-bold mt-1 px-2 py-1 rounded bg-slate-900/5 inline-block ${isFlood ? 'text-red-500' : isWarning ? 'text-yellow-500' : 'text-emerald-500'
+    badgeEl.className = `text-xs font-bold px-2 py-1 rounded bg-slate-900/5 inline-block ${isFlood ? 'text-red-500' : isWarning ? 'text-yellow-500' : 'text-emerald-500'
         }`;
 
     if (isFlood) ledEl.classList.add('animate-ping', 'bg-red-500');
@@ -208,18 +201,28 @@ function createAlert(type, title, msg) {
 // --- WEATHER API ---
 async function initWeather() {
     try {
-        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=7.3775&longitude=3.9470&current=temperature_2m,weather_code&hourly=precipitation_probability&forecast_days=1`);
+        // Added 'relative_humidity_2m' to the requested fields
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LOCATION.lat}&longitude=${LOCATION.lng}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=precipitation_probability&forecast_days=1`);
         const w = await res.json();
+        
+        // Temperature
         document.getElementById('weather-temp').innerText = w.current.temperature_2m.toFixed(0);
         document.getElementById('weather-desc').innerText = "Live Forecast";
 
+        // Rain Probability
         const nowIdx = new Date().getHours();
         const rain = Math.max(w.hourly.precipitation_probability[nowIdx], w.hourly.precipitation_probability[nowIdx + 1]);
         document.getElementById('rain-prob').innerText = rain + "%";
         document.getElementById('rain-bar').style.width = rain + "%";
+
+        // Humidity (New)
+        const humidity = w.current.relative_humidity_2m;
+        document.getElementById('humidity-val').innerText = humidity + "%";
+        document.getElementById('humidity-bar').style.width = humidity + "%";
+
     } catch (e) { console.log(e); }
 }
-initWeather();
+
 // --- CHART.JS SETUP ---
 let myChart;
 function initChart() {
