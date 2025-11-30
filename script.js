@@ -5,7 +5,7 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvH88HT0pC69iC
 const LOCATION = { lat: 6.5244, lng: 3.3792 }; // Lagos
 
 // UPDATE: Container is 100cm tall
-const CONTAINER_HEIGHT = 16; 
+const CONTAINER_HEIGHT = 16;
 
 // UPDATE: Triggers based on DEPTH (Bottom up)
 // Since max is 16cm:
@@ -23,17 +23,17 @@ document.addEventListener("DOMContentLoaded", () => {
     lucide.createIcons();
     initChart();
     fetchWeather();
-    
+
     // Start Data Loop (Fetch every 3 seconds)
-    setInterval(fetchSensorData, 3000); 
-    
+    setInterval(fetchSensorData, 3000);
+
     // Initialize Ruler Marks (Visual Guide 100cm down to 0)
     const rulerContainer = document.getElementById('ruler-marks');
-    for(let i=0; i<10; i++) {
+    for (let i = 0; i < 10; i++) {
         const mark = document.createElement('div');
         mark.className = "w-full border-b border-slate-400/50 h-[10%] flex items-end justify-end pr-1 text-[8px] text-slate-500 font-mono opacity-50";
         // Labels: 100, 90, 80...
-        mark.innerText = (CONTAINER_HEIGHT - (i * (CONTAINER_HEIGHT/10))).toFixed(0);
+        mark.innerText = (CONTAINER_HEIGHT - (i * (CONTAINER_HEIGHT / 10))).toFixed(0);
         rulerContainer.appendChild(mark);
     }
 
@@ -66,7 +66,7 @@ function fetchSensorData() {
             // --- CONSOLE LOGGING (UPDATED FOR DIRECT VALUE) ---
             console.group("🌊 Data Received (Pre-Calculated)");
             console.log("Raw JSON:", data);
-            
+
             if (!data || data.WaterLevel === undefined) {
                 console.warn("❌ Error: 'WaterLevel' key missing");
                 console.groupEnd();
@@ -76,7 +76,7 @@ function fetchSensorData() {
             // UPDATE: Direct assignment. No subtraction.
             const fetchedDepth = parseInt(data.WaterLevel);
             const fetchedTime = new Date(data.Timestamp);
-            
+
             console.log(`✅ Water Depth (from Arduino): ${fetchedDepth} cm`);
             console.log(`📏 Container Max Height: ${CONTAINER_HEIGHT} cm`);
             console.log(`🕒 Timestamp: ${fetchedTime.toLocaleTimeString()}`);
@@ -86,7 +86,7 @@ function fetchSensorData() {
             // Offline Check logic (Older than 5 mins = offline)
             const now = new Date();
             const timeDiff = now - fetchedTime;
-            
+
             if (timeDiff > 5 * 60 * 1000) {
                 isOnline = false;
                 console.log("⚠ Device Status: OFFLINE (Data is old)");
@@ -110,38 +110,36 @@ function fetchSensorData() {
 
 function updateDashboard(newData) {
     sensorData = newData;
-    
+
     // 1. Get Values
     // UPDATE: We use the depth directly. Clamp it between 0 and 100 just for safe UI.
-    let currentDepth = Math.max(0, sensorData.depth); 
-    
+    let currentDepth = Math.max(0, sensorData.depth);
+
     // Calculate percentage based on 100cm container
     const percentage = Math.min(100, (currentDepth / CONTAINER_HEIGHT) * 100);
-    
+
     // 2. Determine State (Direct comparison)
     const isFlood = currentDepth >= floodLevel;      // e.g. >= 90cm
     const isWarning = currentDepth >= warningLevel;  // e.g. >= 70cm
-    
+
     // 3. Update Visualizer UI
     const waterEl = document.getElementById('water-level');
     const badgeEl = document.getElementById('status-badge');
     const ledEl = document.getElementById('sensor-led');
-    
+
     waterEl.style.height = `${percentage}%`;
     document.getElementById('live-depth').innerText = currentDepth.toFixed(1);
 
     // Dynamic Colors
-    waterEl.className = `absolute bottom-0 w-full transition-all duration-1000 ease-in-out z-10 bg-gradient-to-t opacity-90 ${
-        isFlood ? 'from-red-600 to-red-800' : 
-        isWarning ? 'from-yellow-500 to-yellow-600' : 
-        'from-blue-500 to-blue-700'
-    }`;
+    waterEl.className = `absolute bottom-0 w-full transition-all duration-1000 ease-in-out z-10 bg-gradient-to-t opacity-90 ${isFlood ? 'from-red-600 to-red-800' :
+            isWarning ? 'from-yellow-500 to-yellow-600' :
+                'from-blue-500 to-blue-700'
+        }`;
 
     badgeEl.innerText = isFlood ? "CRITICAL FLOOD RISK" : isWarning ? "WARNING: HIGH LEVEL" : "NORMAL FLOW";
-    badgeEl.className = `text-xs font-bold mt-1 px-2 py-1 rounded bg-slate-900/5 inline-block ${
-        isFlood ? 'text-red-500' : isWarning ? 'text-yellow-500' : 'text-emerald-500'
-    }`;
-    
+    badgeEl.className = `text-xs font-bold mt-1 px-2 py-1 rounded bg-slate-900/5 inline-block ${isFlood ? 'text-red-500' : isWarning ? 'text-yellow-500' : 'text-emerald-500'
+        }`;
+
     if (isFlood) ledEl.classList.add('animate-ping', 'bg-red-500');
     else ledEl.classList.remove('animate-ping', 'bg-red-500');
 
@@ -151,7 +149,7 @@ function updateDashboard(newData) {
     // 5. Update Chart
     const timeLabel = new Date(sensorData.timestamp).toLocaleTimeString();
     const lastLabel = myChart.data.labels[myChart.data.labels.length - 1];
-    
+
     if (lastLabel !== timeLabel) {
         addDataToChart(timeLabel, currentDepth);
     }
@@ -160,8 +158,8 @@ function updateDashboard(newData) {
 function updateStatusUI() {
     const dot = document.getElementById('status-dot');
     const text = document.getElementById('status-text');
-    
-    if(isOnline) {
+
+    if (isOnline) {
         dot.className = "h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse";
         text.className = "text-sm font-semibold text-emerald-600";
         text.innerText = "ONLINE";
@@ -170,7 +168,7 @@ function updateStatusUI() {
         text.className = "text-sm font-semibold text-red-500";
         text.innerText = "OFFLINE";
     }
-    
+
     const dateObj = new Date(sensorData.timestamp);
     const formattedTime = !isNaN(dateObj) ? dateObj.toLocaleTimeString() : "--:--";
     document.getElementById('last-update').innerText = "Last Update: " + formattedTime;
@@ -178,7 +176,7 @@ function updateStatusUI() {
 
 function checkAlerts(currentDepth) {
     const container = document.getElementById('alerts-container');
-    container.innerHTML = ''; 
+    container.innerHTML = '';
 
     if (currentDepth >= floodLevel) {
         createAlert('danger', 'CRITICAL WATER LEVEL', `Water is ${currentDepth.toFixed(0)}cm deep. Capacity limit reached.`);
@@ -190,9 +188,9 @@ function checkAlerts(currentDepth) {
 function createAlert(type, title, msg) {
     const container = document.getElementById('alerts-container');
     const div = document.createElement('div');
-    
+
     const colors = type === 'danger' ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200' :
-                                     'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200';
+        'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200';
     const icon = type === 'danger' ? 'triangle-alert' : 'bell';
 
     div.className = `p-4 rounded-xl flex items-center gap-3 shadow-sm border animate-pulse ${colors}`;
@@ -208,32 +206,20 @@ function createAlert(type, title, msg) {
 }
 
 // --- WEATHER API ---
-async function fetchWeather() {
+async function initWeather() {
     try {
-        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LOCATION.lat}&longitude=${LOCATION.lng}&current=temperature_2m,rain&hourly=precipitation_probability&forecast_days=1`);
-        const data = await res.json();
-        
-        const temp = data.current.temperature_2m;
-        const rainProb = data.hourly.precipitation_probability[0];
-        const isRaining = data.current.rain > 0;
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=7.3775&longitude=3.9470&current=temperature_2m,weather_code&hourly=precipitation_probability&forecast_days=1`);
+        const w = await res.json();
+        document.getElementById('weather-temp').innerText = w.current.temperature_2m.toFixed(0);
+        document.getElementById('weather-desc').innerText = "Live Forecast";
 
-        document.getElementById('temp-val').innerText = temp;
-        document.getElementById('rain-prob').innerText = rainProb;
-        document.getElementById('rain-bar').style.width = `${rainProb}%`;
-
-        const iconBg = document.getElementById('weather-icon-bg');
-        if (isRaining) {
-            iconBg.className = "p-3 rounded-2xl bg-blue-500 text-white";
-            iconBg.innerHTML = '<i data-lucide="cloud-rain"></i>';
-        } else {
-            iconBg.className = "p-3 rounded-2xl bg-yellow-400 text-white";
-            iconBg.innerHTML = '<i data-lucide="sun"></i>';
-        }
-        lucide.createIcons();
-
-    } catch (e) { console.error("Weather Error", e); }
+        const nowIdx = new Date().getHours();
+        const rain = Math.max(w.hourly.precipitation_probability[nowIdx], w.hourly.precipitation_probability[nowIdx + 1]);
+        document.getElementById('rain-prob').innerText = rain + "%";
+        document.getElementById('rain-bar').style.width = rain + "%";
+    } catch (e) { console.log(e); }
 }
-
+initWeather();
 // --- CHART.JS SETUP ---
 let myChart;
 function initChart() {
@@ -292,7 +278,7 @@ function getEmails() {
 function addEmail() {
     const input = document.getElementById('new-email');
     const email = input.value;
-    if(email && email.includes('@')) {
+    if (email && email.includes('@')) {
         const container = document.getElementById("alertemails");
         const div = document.createElement('div');
         div.className = "email flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-300";
@@ -308,7 +294,7 @@ function addEmail() {
 function sendAlert() {
     const emails = getEmails();
     const alertButton = document.getElementById("alertbtn");
-    
+
     if (emails.length === 0) {
         alert("No emails found to send alerts to.");
         return;
@@ -330,16 +316,16 @@ function sendAlert() {
         body: JSON.stringify(payload),
         mode: "no-cors"
     })
-    .then(() => {
-        alert("Alert signal sent to system!");
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Error sending alerts.");
-    })
-    .finally(() => {
-        alertButton.innerHTML = originalText;
-        alertButton.disabled = false;
-        lucide.createIcons();
-    });
+        .then(() => {
+            alert("Alert signal sent to system!");
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error sending alerts.");
+        })
+        .finally(() => {
+            alertButton.innerHTML = originalText;
+            alertButton.disabled = false;
+            lucide.createIcons();
+        });
 }
