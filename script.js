@@ -1,5 +1,5 @@
 // --- CONFIGURATION ---
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz31DjkdHEb95i0D9ZXe-Kr7w33szSZ3cCtL8poxPR95ubQQhzc6D-pMub5mGpmPclTwg/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw47MaQgGmPPVF0KUz_xxGzHrjuzf6a1ilU_OK1_hE59UqyFCFijAJXH8-VNKt8DegS1g/exec";
 
 // Coordinates for Ibadan
 const LOCATION = { lat: 7.3775, lng: 3.9470 }; 
