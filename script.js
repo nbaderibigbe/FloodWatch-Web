@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Simulator Logic
     document.getElementById('sim-slider').addEventListener('input', (e) => {
-        const val = parseInt(e.target.value);
+        const val = parseFloat(e.target.value);
         // Simulate a fake rate for testing
         updateDashboard({ depth: val, rate: 1.5, timestamp: new Date() });
     });
@@ -66,7 +66,7 @@ function fetchSensorData() {
                 return;
             }
 
-            const fetchedDepth = parseInt(data.WaterLevel);
+            const fetchedDepth = parseFloat(data.WaterLevel);
             // Get the Rate of Rise (default to 0 if missing)
             const fetchedRate = parseFloat(data.Rate || 0);
             const fetchedTime = new Date(data.Timestamp);
@@ -118,10 +118,10 @@ function updateDashboard(newData) {
     const rorEl = document.getElementById('ror-val');
 
     waterEl.style.height = `${percentage}%`;
-    document.getElementById('live-depth').innerText = currentDepth.toFixed(1);
+    document.getElementById('live-depth').innerText = currentDepth.toFixed(3);
     
     // Update Rate of Rise Text
-    rorEl.innerText = currentRate.toFixed(2);
+    rorEl.innerText = currentRate.toFixed(3);
 
     // Dynamic Colors
     waterEl.className = `absolute bottom-0 w-full transition-all duration-1000 ease-in-out z-10 bg-gradient-to-t opacity-90 ${isFlood ? 'from-red-600 to-red-800' :
