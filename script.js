@@ -118,10 +118,10 @@ function updateDashboard(newData) {
     const rorEl = document.getElementById('ror-val');
 
     waterEl.style.height = `${percentage}%`;
-    document.getElementById('live-depth').innerText = currentDepth.toFixed(3);
+    document.getElementById('live-depth').innerText = currentDepth.toFixed(2);
     
     // Update Rate of Rise Text
-    rorEl.innerText = currentRate.toFixed(3);
+    rorEl.innerText = currentRate.toFixed(2);
 
     // Dynamic Colors
     waterEl.className = `absolute bottom-0 w-full transition-all duration-1000 ease-in-out z-10 bg-gradient-to-t opacity-90 ${isFlood ? 'from-red-600 to-red-800' :
